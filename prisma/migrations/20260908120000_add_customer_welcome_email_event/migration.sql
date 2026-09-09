@@ -1,0 +1,1 @@
+ALTER TYPE "EmailTemplateEvent" ADD VALUE 'CUSTOMER_WELCOME';

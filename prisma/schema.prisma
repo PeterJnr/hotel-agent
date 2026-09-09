@@ -1,0 +1,514 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RoleName {
+  CUSTOMER
+  SUPER_ADMIN
+  ADMIN
+  FRONT_DESK
+  RESERVATION_MANAGER
+  ACCOUNTANT
+  SERVICE_MANAGER
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String     @unique
+  phone        String?    @unique
+  passwordHash String?
+  status       UserStatus @default(ACTIVE)
+
+  accounts      AuthAccount[]
+  roles         UserRole[]
+  refreshTokens RefreshToken[]
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  reservations            Reservation[]
+  refundsInitiated        Refund[]                @relation("RefundInitiator")
+  emailTemplatesCreated   EmailTemplate[]         @relation("EmailTemplateCreator")
+  emailTemplatesUpdated   EmailTemplate[]         @relation("EmailTemplateUpdater")
+  serviceRequests         ServiceRequest[]        @relation("ServiceRequestCustomer")
+  assignedServiceRequests ServiceRequest[]        @relation("ServiceRequestAssignee")
+  serviceRequestComments  ServiceRequestComment[]
+  aiPendingActions        AiPendingAction[]
+  aiConversations         AiConversation[]
+  aiRuns                  AiRun[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuthAccount {
+  id                String       @id @default(cuid())
+  userId            String
+  provider          AuthProvider
+  providerAccountId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        RoleName @unique
+  description String?
+
+  users UserRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+enum RoomTypeName {
+  STANDARD
+  EXECUTIVE
+  SUITE
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model RoomType {
+  id            String       @id @default(cuid())
+  name          RoomTypeName @unique
+  description   String?
+  capacity      Int          @default(2)
+  pricePerNight Decimal      @db.Decimal(12, 2)
+
+  rooms Room[]
+
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  images    RoomTypeImage[]
+
+  @@index([name])
+}
+
+model Room {
+  id         String     @id @default(cuid())
+  roomNumber String     @unique
+  roomTypeId String
+  status     RoomStatus @default(AVAILABLE)
+
+  roomType        RoomType         @relation(fields: [roomTypeId], references: [id])
+  reservations    Reservation[]
+  serviceRequests ServiceRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomTypeId])
+  @@index([status])
+}
+
+model RoomTypeImage {
+  id           String  @id @default(cuid())
+  roomTypeId   String
+  url          String
+  publicId     String
+  altText      String?
+  displayOrder Int     @default(0)
+  isPrimary    Boolean @default(false)
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomTypeId])
+  @@index([roomTypeId, displayOrder])
+}
+
+enum ReservationStatus {
+  PENDING
+  PAYMENT_PENDING
+  CONFIRMED
+  PAYMENT_FAILED
+  CANCELLATION_PENDING
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+enum PaymentProvider {
+  PAYSTACK
+}
+
+enum PaymentStatus {
+  INITIALIZING
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUND_REQUIRED
+  REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  NEEDS_ATTENTION
+  SUCCESSFUL
+  FAILED
+}
+
+enum EmailTemplateEvent {
+  CUSTOMER_WELCOME
+  RESERVATION_CREATED
+  RESERVATION_CANCELLED
+  PAYMENT_CONFIRMED
+  PAYMENT_FAILED
+  CHECKED_IN
+  CHECKED_OUT
+  STAFF_ONBOARDED
+  REFUND_STATUS
+  SERVICE_REQUEST_CREATED_CUSTOMER
+  SERVICE_REQUEST_CREATED_STAFF
+  SERVICE_REQUEST_ASSIGNED
+  SERVICE_REQUEST_STATUS_CHANGED
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  userId      String
+  roomId      String
+  checkIn     DateTime
+  checkOut    DateTime
+  guests      Int
+  status      ReservationStatus @default(PENDING)
+  totalAmount Decimal           @db.Decimal(12, 2)
+
+  user            User             @relation(fields: [userId], references: [id])
+  room            Room             @relation(fields: [roomId], references: [id])
+  payments        Payment[]
+  serviceRequests ServiceRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([roomId])
+  @@index([checkIn, checkOut])
+  @@index([status])
+}
+
+model Payment {
+  id                    String          @id @default(cuid())
+  reservationId         String
+  provider              PaymentProvider @default(PAYSTACK)
+  reference             String          @unique
+  amount                Decimal         @db.Decimal(12, 2)
+  currency              String          @default("NGN")
+  status                PaymentStatus   @default(INITIALIZING)
+  authorizationUrl      String?
+  accessCode            String?
+  providerTransactionId String?         @unique
+  failureReason         String?
+  paidAt                DateTime?
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  refund      Refund?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reservationId])
+  @@index([status])
+}
+
+model Refund {
+  id               String       @id @default(cuid())
+  paymentId        String       @unique
+  initiatedById    String
+  providerRefundId String?      @unique
+  amount           Decimal      @db.Decimal(12, 2)
+  currency         String       @default("NGN")
+  status           RefundStatus @default(PENDING)
+  reason           String?
+  failureReason    String?
+  expectedAt       DateTime?
+  refundedAt       DateTime?
+
+  payment     Payment @relation(fields: [paymentId], references: [id])
+  initiatedBy User    @relation("RefundInitiator", fields: [initiatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([initiatedById])
+}
+
+model EmailTemplate {
+  id          String             @id @default(cuid())
+  name        String
+  event       EmailTemplateEvent
+  subject     String
+  htmlBody    String
+  textBody    String?
+  isActive    Boolean            @default(false)
+  createdById String
+  updatedById String
+
+  createdBy User @relation("EmailTemplateCreator", fields: [createdById], references: [id])
+  updatedBy User @relation("EmailTemplateUpdater", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([event, name])
+  @@index([event, isActive])
+}
+
+enum ServiceRequestCategory {
+  HOUSEKEEPING
+  MAINTENANCE
+  ROOM_SERVICE
+  COMPLAINT
+  OTHER
+}
+
+enum ServiceRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ServiceRequestStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+model ServiceRequest {
+  id            String                 @id @default(cuid())
+  userId        String
+  reservationId String
+  roomId        String
+  assignedToId  String?
+  category      ServiceRequestCategory
+  priority      ServiceRequestPriority @default(MEDIUM)
+  status        ServiceRequestStatus   @default(OPEN)
+  title         String
+  description   String
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+
+  user        User                    @relation("ServiceRequestCustomer", fields: [userId], references: [id])
+  reservation Reservation             @relation(fields: [reservationId], references: [id])
+  room        Room                    @relation(fields: [roomId], references: [id])
+  assignedTo  User?                   @relation("ServiceRequestAssignee", fields: [assignedToId], references: [id])
+  comments    ServiceRequestComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([reservationId])
+  @@index([roomId])
+  @@index([assignedToId])
+  @@index([status, priority])
+}
+
+model ServiceRequestComment {
+  id               String  @id @default(cuid())
+  serviceRequestId String
+  authorId         String
+  content          String
+  isInternal       Boolean @default(false)
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  author         User           @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([serviceRequestId, createdAt])
+  @@index([authorId])
+}
+
+enum AiPendingActionStatus {
+  PENDING
+  EXECUTING
+  EXECUTED
+  CANCELLED
+  EXPIRED
+  FAILED
+}
+
+model AiPendingAction {
+  id              String                @id @default(cuid())
+  userId          String
+  conversationId  String?
+  sourceMessageId String?               @unique
+  toolName        String
+  arguments       Json
+  status          AiPendingActionStatus @default(PENDING)
+  result          Json?
+  failureReason   String?
+  expiresAt       DateTime
+  confirmedAt     DateTime?
+  executedAt      DateTime?
+  cancelledAt     DateTime?
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation  AiConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  sourceMessage AiMessage?      @relation(fields: [sourceMessageId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([conversationId])
+  @@index([status, expiresAt])
+}
+
+enum AiConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+}
+
+enum AiMessageStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiRunStatus {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+model AiConversation {
+  id            String               @id @default(cuid())
+  userId        String
+  title         String?
+  status        AiConversationStatus @default(ACTIVE)
+  lastMessageAt DateTime             @default(now())
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       AiMessage[]
+  pendingActions AiPendingAction[]
+  runs           AiRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status, lastMessageAt])
+}
+
+model AiMessage {
+  id               String          @id @default(cuid())
+  conversationId   String
+  role             AiMessageRole
+  status           AiMessageStatus @default(COMPLETED)
+  content          String
+  clientMessageId  String?
+  replyToMessageId String?         @unique
+  failureReason    String?
+  metadata         Json?
+
+  conversation  AiConversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo       AiMessage?       @relation("AiMessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  reply         AiMessage?       @relation("AiMessageReply")
+  pendingAction AiPendingAction?
+  aiRun         AiRun?
+
+  createdAt DateTime @default(now())
+
+  @@unique([conversationId, clientMessageId])
+  @@index([conversationId, createdAt])
+}
+
+model AiRun {
+  id                   String      @id @default(cuid())
+  userId               String?
+  conversationId       String?
+  sourceMessageId      String?     @unique
+  provider             String      @default("gemini")
+  model                String
+  status               AiRunStatus @default(PROCESSING)
+  responseType         String?
+  toolName             String?
+  confirmationRequired Boolean     @default(false)
+  inputTokens          Int?
+  outputTokens         Int?
+  totalTokens          Int?
+  durationMs           Int?
+  errorCode            String?
+  completedAt          DateTime?
+
+  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  conversation  AiConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  sourceMessage AiMessage?      @relation(fields: [sourceMessageId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([toolName, createdAt])
+  @@index([userId, createdAt])
+}

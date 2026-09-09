@@ -1,0 +1,17 @@
+import { ArrowLeft, ArrowRight, CreditCard, Search } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router";
+import { useAdminPayments } from "../features/admin/adminQueries.js";
+import { formatStayDate } from "../features/customer/customerQueries.js";
+import { formatNaira } from "../features/rooms/roomCatalog.js";
+
+const statuses = ["", "INITIALIZING", "PENDING", "SUCCESSFUL", "FAILED", "REFUND_REQUIRED", "REFUNDED"];
+
+export function AdminPaymentsPage() {
+  const [filters, setFilters] = useState({ status: "", reference: "", page: 1, limit: 20 });
+  const { data, isPending, error } = useAdminPayments(filters);
+  const updateStatus = (event) => setFilters((current) => ({ ...current, status: event.target.value, page: 1 }));
+  const updateReference = (event) => setFilters((current) => ({ ...current, reference: event.target.value, page: 1 }));
+  const payments = data?.payments || []; const pagination = data?.pagination;
+  return <main className="admin-screen"><div className="admin-heading"><div><span className="eyebrow">Finance desk</span><h1>Payments & refunds</h1><p>Trace Paystack transactions, failures, and full-refund lifecycles.</p></div><strong className="record-count">{pagination?.total || 0} records</strong></div><section className="admin-filters payment-filters"><label className="admin-search"><Search /><input value={filters.reference} onChange={updateReference} placeholder="Search payment reference" /></label><label><span>Status</span><select value={filters.status} onChange={updateStatus}>{statuses.map((status) => <option value={status} key={status}>{status ? status.replaceAll("_", " ") : "All statuses"}</option>)}</select></label></section>{isPending && <div className="admin-loading">Reconciling the ledger…</div>}{error && <div className="form-error">{error.message}</div>}<section className="admin-table-wrap"><table className="admin-table payment-table"><thead><tr><th>Reference</th><th>Guest</th><th>Reservation</th><th>Status</th><th>Amount</th><th>Created</th><th /></tr></thead><tbody>{payments.map((payment) => <tr key={payment.id}><td><strong>{payment.reference}</strong><small>{payment.provider}</small></td><td><strong>{payment.reservation.user.firstName} {payment.reservation.user.lastName}</strong><small>{payment.reservation.user.email}</small></td><td><strong>Room {payment.reservation.room.roomNumber}</strong><small>{payment.reservation.status.replaceAll("_", " ")}</small></td><td><span className={`status-pill ${payment.status.toLowerCase()}`}>{payment.status.replaceAll("_", " ")}</span></td><td><strong>{formatNaira(payment.amount)}</strong><small>{payment.currency}</small></td><td><strong>{formatStayDate(payment.createdAt)}</strong></td><td><Link to={`/admin/payments/${payment.id}`} aria-label="Open payment"><ArrowRight /></Link></td></tr>)}</tbody></table>{!isPending && !payments.length && <div className="admin-table-empty"><CreditCard /><p>No payments match this view.</p></div>}</section>{pagination?.pages > 1 && <nav className="admin-pagination"><button disabled={pagination.page <= 1} onClick={() => setFilters((current) => ({ ...current, page: current.page - 1 }))}><ArrowLeft /> Previous</button><span>Page {pagination.page} of {pagination.pages}</span><button disabled={pagination.page >= pagination.pages} onClick={() => setFilters((current) => ({ ...current, page: current.page + 1 }))}>Next <ArrowRight /></button></nav>}</main>;
+}

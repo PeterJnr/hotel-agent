@@ -1,0 +1,15 @@
+import express from "express";
+import * as controller from "../controllers/emailTemplate.controller.js";
+import { authenticate, authorizeRoles } from "../middleware/auth.middleware.js";
+const router = express.Router();
+router.use(authenticate, authorizeRoles("SUPER_ADMIN", "ADMIN"));
+router.get("/placeholders", controller.placeholders);
+router.get("/", controller.list);
+router.post("/", controller.create);
+router.get("/:id", controller.get);
+router.post("/:id/activate", controller.activate);
+router.post("/:id/deactivate", controller.deactivate);
+router.post("/:id/preview", controller.preview);
+router.patch("/:id", controller.update);
+router.delete("/:id", controller.remove);
+export default router;

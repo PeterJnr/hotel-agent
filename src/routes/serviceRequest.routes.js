@@ -1,0 +1,3 @@
+import express from "express";import * as c from "../controllers/serviceRequest.controller.js";import {authenticate,authorizeRoles} from "../middleware/auth.middleware.js";
+const router=express.Router();const staff=authorizeRoles("SUPER_ADMIN","ADMIN","FRONT_DESK","SERVICE_MANAGER");
+router.use(authenticate);router.get("/me",c.mine);router.get("/assignees",staff,c.assignees);router.post("/",c.create);router.get("/",staff,c.list);router.patch("/:id/assign",staff,c.assign);router.patch("/:id/status",staff,c.status);router.patch("/:id/priority",staff,c.priority);router.post("/:id/comments",c.comment);router.patch("/:id/cancel",c.cancel);router.get("/:id",c.get);export default router;
