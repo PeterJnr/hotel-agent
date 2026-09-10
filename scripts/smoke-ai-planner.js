@@ -25,5 +25,5 @@ assert.equal(writePlan.type, "tool_call");
 assert.equal(writePlan.toolCall.name, "create_reservation");
 assert.equal(writePlan.toolCall.confirmationRequired, true);
 
-console.log("Hotel AI planner returned validated read/write plans.");
+console.log("Apex Solacii planner returned validated read/write plans.");
 console.log("No hotel tool was executed.");

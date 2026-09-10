@@ -39,6 +39,7 @@ model User {
   accounts      AuthAccount[]
   roles         UserRole[]
   refreshTokens RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -55,6 +56,21 @@ model User {
 
   @@index([status])
   @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model RefreshToken {
@@ -208,6 +224,7 @@ enum RefundStatus {
 
 enum EmailTemplateEvent {
   CUSTOMER_WELCOME
+  PASSWORD_RESET
   RESERVATION_CREATED
   RESERVATION_CANCELLED
   PAYMENT_CONFIRMED
@@ -220,6 +237,32 @@ enum EmailTemplateEvent {
   SERVICE_REQUEST_CREATED_STAFF
   SERVICE_REQUEST_ASSIGNED
   SERVICE_REQUEST_STATUS_CHANGED
+}
+
+enum EmailOutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+model EmailOutbox {
+  id            String            @id @default(cuid())
+  event         EmailTemplateEvent
+  payload       Json
+  dedupeKey     String            @unique
+  status        EmailOutboxStatus @default(PENDING)
+  attempts      Int               @default(0)
+  maxAttempts   Int               @default(5)
+  nextAttemptAt DateTime          @default(now())
+  lockedAt      DateTime?
+  sentAt        DateTime?
+  lastError     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([event, createdAt])
 }
 
 model Reservation {

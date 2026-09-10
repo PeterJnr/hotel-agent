@@ -71,3 +71,21 @@ export function useAdminStaffMember(userId) {
 export function useStaffRoles() {
   return useQuery({ queryKey: ["staff-roles"], queryFn: () => api.get("/api/management/staff/roles"), select: (response) => response.data });
 }
+
+export function useEmailTemplates(event = "") {
+  const params = new URLSearchParams();
+  if (event) params.set("event", event);
+  return useQuery({
+    queryKey: ["admin-email-templates", event],
+    queryFn: () => api.get(`/api/management/email-templates${params.size ? `?${params}` : ""}`),
+    select: (response) => response.data,
+  });
+}
+
+export function useEmailTemplatePlaceholders() {
+  return useQuery({
+    queryKey: ["email-template-placeholders"],
+    queryFn: () => api.get("/api/management/email-templates/placeholders"),
+    select: (response) => response.data,
+  });
+}

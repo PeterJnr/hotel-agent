@@ -4,7 +4,7 @@ import { initiateFullRefund, listPayments, processRefundWebhook } from "../src/s
 
 process.env.PAYSTACK_SECRET_KEY = "refund-smoke-key";
 process.env.SENDLIB_API_KEY = "refund-email-key";
-process.env.SENDLIB_FROM_EMAIL = "Hotel AI <bookings@example.com>";
+process.env.SENDLIB_FROM_EMAIL = "Apex Solacii <bookings@example.com>";
 const suffix = crypto.randomUUID().slice(0, 8);
 let user, room, reservation, payment;
 let emails = 0;

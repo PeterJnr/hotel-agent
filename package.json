@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "start:prod": "npm run db:migrate:deploy && node src/server.js",
+    "postinstall": "prisma generate --config prisma7.config.ts",
+    "db:migrate:deploy": "prisma migrate deploy --config prisma7.config.ts",
     "promote:super-admin": "node scripts/promote-super-admin.js",
     "test:payment": "node scripts/smoke-payment.js",
     "test:staff": "node scripts/smoke-staff.js",
@@ -23,7 +26,11 @@
     "test:ai-conversation": "node scripts/smoke-ai-conversation.js",
     "test:ai-resilience": "node scripts/smoke-ai-resilience.js",
     "test:ai-context": "node scripts/smoke-ai-context.js",
-    "test:ai-observability": "node scripts/smoke-ai-observability.js"
+    "test:ai-observability": "node scripts/smoke-ai-observability.js",
+    "test:guest-stay": "node scripts/smoke-guest-stay.js",
+    "test:ai-booking-flow": "node scripts/smoke-ai-booking-flow.js",
+    "test:email-outbox": "node scripts/smoke-email-outbox.js",
+    "test:password-reset": "node scripts/smoke-password-reset.js"
   },
   "keywords": [],
   "author": "",

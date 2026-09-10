@@ -5,6 +5,8 @@ import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { HomePage } from "../pages/HomePage.jsx";
 import { LoginPage } from "../pages/LoginPage.jsx";
 import { RegisterPage } from "../pages/RegisterPage.jsx";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage.jsx";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage.jsx";
 import { PortalPage } from "../pages/PortalPage.jsx";
 import { NotFoundPage } from "../pages/NotFoundPage.jsx";
 import { RoomsPage } from "../pages/RoomsPage.jsx";
@@ -30,6 +32,8 @@ import { AdminPaymentsPage } from "../pages/AdminPaymentsPage.jsx";
 import { AdminPaymentDetailPage } from "../pages/AdminPaymentDetailPage.jsx";
 import { AdminStaffPage } from "../pages/AdminStaffPage.jsx";
 import { AdminStaffDetailPage } from "../pages/AdminStaffDetailPage.jsx";
+import { AdminEmailTemplatesPage } from "../pages/AdminEmailTemplatesPage.jsx";
+import { AdminAiInsightsPage } from "../pages/AdminAiInsightsPage.jsx";
 
 const staffRoles = ["SUPER_ADMIN", "ADMIN", "FRONT_DESK", "RESERVATION_MANAGER", "ACCOUNTANT", "SERVICE_MANAGER"];
 
@@ -43,6 +47,8 @@ export function App() {
         <Route path="availability" element={<AvailabilityPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="book" element={<BookingPage />} />
           <Route path="payment/callback" element={<PaymentCallbackPage />} />
@@ -73,6 +79,10 @@ export function App() {
           <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />}>
             <Route path="admin/staff" element={<AdminStaffPage />} />
             <Route path="admin/staff/:userId" element={<AdminStaffDetailPage />} />
+          </Route>
+          <Route element={<ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN"]} />}>
+            <Route path="admin/content" element={<AdminEmailTemplatesPage />} />
+            <Route path="admin/ai" element={<AdminAiInsightsPage />} />
           </Route>
           <Route path="admin/*" element={<AdminModulePlaceholder />} />
         </Route>

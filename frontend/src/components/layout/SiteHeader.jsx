@@ -4,16 +4,16 @@ import { Link, NavLink } from "react-router";
 
 import { useAuth } from "../../features/auth/authContext.js";
 
-export function SiteHeader() {
+export function SiteHeader({ variant = "solid" }) {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
   const close = () => setOpen(false);
 
   return (
-    <header className="site-header">
-      <Link className="brand" to="/" onClick={close} aria-label="Maison Aurelia home">
-        <span className="brand-mark">MA</span>
-        <span><strong>Maison Aurelia</strong><small>Intelligent hospitality</small></span>
+    <header className={`site-header ${variant}`}>
+      <Link className="brand" to="/" onClick={close} aria-label="Apex Solacii home">
+        <span className="brand-mark">AS</span>
+        <span><strong>Apex Solacii</strong><small>Intelligent hospitality</small></span>
       </Link>
       <button className="menu-toggle" type="button" onClick={() => setOpen((value) => !value)} aria-label="Toggle navigation" aria-expanded={open}>
         {open ? <X /> : <Menu />}
@@ -28,7 +28,7 @@ export function SiteHeader() {
             <button className="nav-quiet" type="button" onClick={() => { close(); logout(); }}>Sign out</button>
           </>
         ) : <NavLink to="/login" onClick={close}>Sign in</NavLink>}
-        <Link className="nav-cta" to={user ? "/portal" : "/register"} onClick={close}><Sparkles size={15} /> {user ? "Ask Aurelia" : "Reserve"}</Link>
+        <Link className="nav-cta" to={user ? "/portal" : "/register"} onClick={close}><Sparkles size={15} /> {user ? "Ask Solacii AI" : "Reserve"}</Link>
       </nav>
     </header>
   );

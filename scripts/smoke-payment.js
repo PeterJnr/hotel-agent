@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 process.env.PAYSTACK_SECRET_KEY = "payment-smoke-test-secret";
 process.env.SENDLIB_API_KEY = "email-smoke-test-key";
-process.env.SENDLIB_FROM_EMAIL = "Hotel AI <bookings@example.com>";
+process.env.SENDLIB_FROM_EMAIL = "Apex Solacii <bookings@example.com>";
 
 const { prisma } = await import("../src/lib/prisma.js");
 const {

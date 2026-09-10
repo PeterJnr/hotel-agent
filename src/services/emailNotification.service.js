@@ -2,7 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import { sendTransactionalEmail } from "../lib/sendlib.js";
 import { renderActiveEmailTemplate } from "./emailTemplate.service.js";
 
-const hotelName = process.env.HOTEL_NAME || "Hotel AI";
+const hotelName = process.env.HOTEL_NAME || "Apex Solacii";
 
 function escapeHtml(value) {
   return String(value)
@@ -242,7 +242,7 @@ export async function notifyCustomerWelcome(customer) {
   const event = "CUSTOMER_WELCOME";
   try {
     const loginUrl = process.env.FRONTEND_LOGIN_URL?.trim() || "";
-    const message = "Your guest account is ready. You can now manage reservations and ask your AI concierge for help throughout your stay.";
+    const message = "Your guest account is ready. You can now manage reservations and ask Solacii AI for help throughout your stay.";
     const details = [["Email", customer.email], ...(loginUrl ? [["Guest portal", loginUrl]] : [])];
     const custom = await renderActiveEmailTemplate(event, {
       hotelName,
@@ -259,6 +259,35 @@ export async function notifyCustomerWelcome(customer) {
     });
   } catch (error) {
     console.error(`Email notification failed (${event}, customer ${customer.id}):`, error.message);
+    return null;
+  }
+}
+
+export async function notifyPasswordReset({ user, resetUrl, expiresIn = "1 hour" }) {
+  const event = "PASSWORD_RESET";
+
+  try {
+    const message = "We received a request to reset your password. Use the secure link below before it expires. If you did not request this, you can safely ignore this email.";
+    const custom = await renderActiveEmailTemplate(event, {
+      hotelName,
+      firstName: user.firstName,
+      resetUrl,
+      expiresIn,
+    });
+
+    return await sendTransactionalEmail({
+      to: user.email,
+      subject: custom?.subject || `${hotelName}: reset your password`,
+      html: custom?.html || emailLayout({
+        firstName: user.firstName,
+        title: "Reset your password",
+        message,
+        details: [["Secure reset link", resetUrl], ["Expires in", expiresIn]],
+      }),
+      text: custom?.text || `Hello ${user.firstName},\n\n${message}\n\nReset password: ${resetUrl}\nExpires in: ${expiresIn}\n\nRegards,\n${hotelName}`,
+    });
+  } catch (error) {
+    console.error(`Email notification failed (${event}, user ${user.id}):`, error.message);
     return null;
   }
 }

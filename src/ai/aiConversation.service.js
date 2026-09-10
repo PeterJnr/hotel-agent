@@ -36,7 +36,7 @@ function rejectSensitiveContent(content) {
   const labelledSecretPattern = /\b(?:password|passcode|pin|otp|one[- ]time password)\s*(?:is|:|=)\s*\S+/i;
   if (compactCardPattern.test(content) || labelledSecretPattern.test(content)) {
     throw conversationError(
-      "Do not send passwords, card numbers, PINs, or one-time passwords to Hotel AI.",
+      "Do not send passwords, card numbers, PINs, or one-time passwords to Solacii AI.",
       "AI_SENSITIVE_CONTENT_REJECTED",
     );
   }

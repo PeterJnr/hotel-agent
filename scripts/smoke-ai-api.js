@@ -41,7 +41,7 @@ try {
   const userMessage = await saveUserAiMessage({
     conversationId: conversation.id,
     userId: customer.id,
-    content: "Hello Hotel AI",
+    content: "Hello Apex Solacii",
     clientMessageId: "api-smoke-message",
   });
   await saveAssistantAiMessage({

@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
+import { createHash, randomBytes } from "node:crypto";
 
 import { prisma } from "../lib/prisma.js";
 import { verifyGoogleCredential } from "../lib/googleAuth.js";
-import { notifyCustomerWelcome } from "./emailNotification.service.js";
+import { deliverEmailOutboxJob, enqueueEmail } from "./emailOutbox.service.js";
 import {
   createAccessToken,
   createRefreshToken,
@@ -38,6 +39,19 @@ function validatePassword(password) {
   if (Buffer.byteLength(password, "utf8") > 72) {
     throw authError("Password must not exceed 72 UTF-8 bytes.");
   }
+}
+
+function hashPasswordResetToken(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function passwordResetUrl(token) {
+  const configured = process.env.FRONTEND_RESET_PASSWORD_URL?.trim();
+  const loginUrl = process.env.FRONTEND_LOGIN_URL?.trim();
+  const baseUrl = configured || (loginUrl ? new URL("/reset-password", loginUrl).toString() : "http://localhost:5173/reset-password");
+  const url = new URL(baseUrl);
+  url.searchParams.set("token", token);
+  return url.toString();
 }
 
 function requireName(value, fieldName) {
@@ -153,11 +167,13 @@ export async function registerWithEmail({
       });
 
       const tokens = await createSession(tx, user);
-
-      return { user: publicUser(user), ...tokens };
+      const publicAccount = publicUser(user);
+      const outbox = await enqueueEmail(tx, { event: "CUSTOMER_WELCOME", dedupeKey: `customer-welcome:${user.id}`, payload: { customer: publicAccount } });
+      return { user: publicAccount, ...tokens, outboxJobId: outbox.id };
     });
-    await notifyCustomerWelcome(result.user);
-    return result;
+    const { outboxJobId, ...session } = result;
+    await deliverEmailOutboxJob(outboxJobId);
+    return session;
   } catch (error) {
     if (error.code === "P2002") {
       throw authError("Email or phone is already in use.", 409);
@@ -189,6 +205,52 @@ export async function loginWithEmail({ email, password }) {
 
   const tokens = await createSession(prisma, user);
   return { user: publicUser(user), ...tokens };
+}
+
+export async function requestPasswordReset({ email }) {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true, firstName: true, email: true, passwordHash: true, status: true },
+  });
+
+  if (!user?.passwordHash || user.status !== "ACTIVE") return;
+
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = hashPasswordResetToken(token);
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  const resetUrl = passwordResetUrl(token);
+  const outbox = await prisma.$transaction(async (tx) => {
+    await tx.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } });
+    await tx.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } });
+    return enqueueEmail(tx, {
+      event: "PASSWORD_RESET",
+      dedupeKey: `password-reset:${tokenHash}`,
+      payload: { user: { id: user.id, firstName: user.firstName, email: user.email }, resetUrl, expiresIn: "1 hour" },
+    });
+  });
+
+  await deliverEmailOutboxJob(outbox.id);
+}
+
+export async function resetPassword({ token, password }) {
+  if (typeof token !== "string" || !token.trim()) throw authError("Reset token is required.");
+  validatePassword(password);
+  const tokenHash = hashPasswordResetToken(token.trim());
+  const passwordHash = await bcrypt.hash(password, 12);
+  const now = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    const resetToken = await tx.passwordResetToken.findUnique({ where: { tokenHash } });
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt <= now) {
+      throw authError("This password reset link is invalid or has expired.", 400);
+    }
+
+    await tx.user.update({ where: { id: resetToken.userId }, data: { passwordHash } });
+    await tx.passwordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: now } });
+    await tx.passwordResetToken.deleteMany({ where: { userId: resetToken.userId, id: { not: resetToken.id } } });
+    await tx.refreshToken.deleteMany({ where: { userId: resetToken.userId } });
+  });
 }
 
 export async function refreshSession(token) {
@@ -313,10 +375,13 @@ export async function loginWithGoogle(credential) {
       });
 
       const tokens = await createSession(tx, user);
-      return { user: publicUser(user), ...tokens };
+      const publicAccount = publicUser(user);
+      const outbox = await enqueueEmail(tx, { event: "CUSTOMER_WELCOME", dedupeKey: `customer-welcome:${user.id}`, payload: { customer: publicAccount } });
+      return { user: publicAccount, ...tokens, outboxJobId: outbox.id };
     });
-    await notifyCustomerWelcome(result.user);
-    return result;
+    const { outboxJobId, ...session } = result;
+    await deliverEmailOutboxJob(outboxJobId);
+    return session;
   } catch (error) {
     if (error.code === "P2002") {
       throw authError(

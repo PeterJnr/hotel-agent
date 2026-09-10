@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "2a26b096-a236-4a83-a323-hotelai2026",
-    "name": "Hotel AI - Complete API Test Suite",
-    "description": "Import with the Hotel AI - Local environment. Run folders in numeric order when practical. Requests that require Google, Cloudinary, Paystack, Sendlib, or a checked-in reservation are explicitly labelled.",
+    "name": "Apex Solacii - Complete API Test Suite",
+    "description": "Import with the Apex Solacii - Local environment. Run folders in numeric order when practical. Requests that require Google, Cloudinary, Paystack, Sendlib, or a checked-in reservation are explicitly labelled.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -113,6 +113,151 @@
                   "if (body.data.accessToken !== undefined && body.data.accessToken !== null) pm.environment.set(\"customerToken\", body.data.accessToken);",
                   "if (body.data.refreshToken !== undefined && body.data.refreshToken !== null) pm.environment.set(\"customerRefreshToken\", body.data.refreshToken);",
                   "if (body.data.user.id !== undefined && body.data.user.id !== null) pm.environment.set(\"customerId\", body.data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request password reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Sends a one-hour reset link through Sendlib. Copy its token into passwordResetToken for the next request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 201 or 202\", () => pm.expect([200,201,202]).to.include(pm.response.code));",
+                  "pm.test(\"Response is JSON\", () => pm.response.to.be.json);",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Success envelope is present\", () => pm.expect(body).to.have.property(\"success\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset password [USES EMAILED TOKEN]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/reset-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{passwordResetToken}}\",\n  \"password\": \"{{newCustomerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Use the token from the reset email. A successful reset revokes all existing refresh tokens."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 201 or 202\", () => pm.expect([200,201,202]).to.include(pm.response.code));",
+                  "pm.test(\"Response is JSON\", () => pm.response.to.be.json);",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Success envelope is present\", () => pm.expect(body).to.have.property(\"success\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Password reset does not reveal unknown accounts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"unknown.{{$timestamp}}@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test(\"Response is JSON\", () => pm.response.to.be.json);",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Success envelope is present\", () => pm.expect(body).to.have.property(\"success\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid password reset token is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/reset-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid-token\",\n  \"password\": \"NewPostmanPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error envelope is safe\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.message).to.be.a(\"string\"); });"
                 ]
               }
             }
@@ -420,7 +565,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Updated through the Hotel AI Postman suite\",\n  \"capacity\": 3,\n  \"pricePerNight\": \"2500.00\"\n}",
+              "raw": "{\n  \"description\": \"Updated through the Apex Solacii Postman suite\",\n  \"capacity\": 3,\n  \"pricePerNight\": \"2500.00\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1925,7 +2070,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"variables\": {\n    \"firstName\": \"Ada\",\n    \"lastName\": \"Okafor\",\n    \"email\": \"ada@example.com\",\n    \"loginUrl\": \"http://localhost:5173/login\",\n    \"hotelName\": \"Maison Aurelia\"\n  }\n}",
+              "raw": "{\n  \"variables\": {\n    \"firstName\": \"Ada\",\n    \"lastName\": \"Okafor\",\n    \"email\": \"ada@example.com\",\n    \"loginUrl\": \"http://localhost:5173/login\",\n    \"hotelName\": \"Apex Solacii\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2850,7 +2995,7 @@
       ]
     },
     {
-      "name": "11 - Hotel AI Customer",
+      "name": "11 - Apex Solacii Customer",
       "item": [
         {
           "name": "Start AI conversation (captures conversation/action)",
@@ -3149,7 +3294,7 @@
       ]
     },
     {
-      "name": "12 - Hotel AI Admin Observability",
+      "name": "12 - Apex Solacii Admin Observability",
       "item": [
         {
           "name": "AI metrics",

@@ -5,6 +5,8 @@ import {
   logoutSession,
   refreshSession,
   registerWithEmail,
+  requestPasswordReset,
+  resetPassword,
 } from "../services/auth.service.js";
 
 function sendError(res, error) {
@@ -36,6 +38,30 @@ export async function login(req, res) {
       success: true,
       message: "Login successful.",
       data: result,
+    });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function forgotPassword(req, res) {
+  try {
+    await requestPasswordReset(req.body);
+    return res.status(200).json({
+      success: true,
+      message: "If an eligible account exists, a password reset link has been sent.",
+    });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function completePasswordReset(req, res) {
+  try {
+    await resetPassword(req.body);
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You can now sign in.",
     });
   } catch (error) {
     return sendError(res, error);

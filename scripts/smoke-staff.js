@@ -14,7 +14,7 @@ let staff;
 let onboardingEmailSent = false;
 
 process.env.SENDLIB_API_KEY = "staff-email-smoke-test-key";
-process.env.SENDLIB_FROM_EMAIL = "Hotel AI <bookings@example.com>";
+process.env.SENDLIB_FROM_EMAIL = "Apex Solacii <bookings@example.com>";
 process.env.FRONTEND_LOGIN_URL = "http://localhost:5173/login";
 globalThis.fetch = async (url, options) => {
   if (url !== "https://sendlib.samueltuoyo.com/api/send") {

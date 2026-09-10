@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: apex-solacii-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: apex-solacii-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.7-flash
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        sync: false
+      - key: SENDLIB_API_KEY
+        sync: false
+      - key: SENDLIB_FROM_EMAIL
+        sync: false
+      - key: HOTEL_NAME
+        value: Apex Solacii
+      - key: FRONTEND_LOGIN_URL
+        sync: false
+      - key: FRONTEND_RESET_PASSWORD_URL
+        sync: false
+
+databases:
+  - name: apex-solacii-db
+    plan: free
+    databaseName: apex_solacii
+    user: apex_solacii

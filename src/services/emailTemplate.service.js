@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma.js";
 
 export const templatePlaceholders = {
   CUSTOMER_WELCOME: ["hotelName", "firstName", "lastName", "email", "loginUrl"],
+  PASSWORD_RESET: ["hotelName", "firstName", "resetUrl", "expiresIn"],
   RESERVATION_CREATED: ["hotelName", "firstName", "reservationId", "roomType", "roomNumber", "checkIn", "checkOut", "guests", "total"],
   RESERVATION_CANCELLED: ["hotelName", "firstName", "reservationId", "roomType", "roomNumber", "checkIn", "checkOut", "guests", "total"],
   PAYMENT_CONFIRMED: ["hotelName", "firstName", "reservationId", "roomType", "roomNumber", "checkIn", "checkOut", "guests", "total", "paymentReference"],

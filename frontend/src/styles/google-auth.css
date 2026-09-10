@@ -1,0 +1,33 @@
+.google-signin {
+  min-height: 44px;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.google-signin > div {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.google-signin > span {
+  position: absolute;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.google-signin.disabled {
+  opacity: .55;
+  pointer-events: none;
+}
+
+.google-config-note {
+  border: 1px dashed var(--stone);
+  padding: 13px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}

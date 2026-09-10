@@ -1,6 +1,6 @@
-# Hotel Agent
+# Apex Solacii
 
-An AI-first hotel management and guest experience platform. Hotel Agent combines room discovery, reservations, Paystack payments, service requests, transactional email, staff operations, and a Gemini-powered concierge with explicit confirmation for protected actions.
+An AI-first hotel management and guest experience platform. Apex Solacii combines room discovery, reservations, Paystack payments, service requests, transactional email, staff operations, and Solacii AI, a Gemini-powered concierge with explicit confirmation for protected actions.
 
 ## Stack
 

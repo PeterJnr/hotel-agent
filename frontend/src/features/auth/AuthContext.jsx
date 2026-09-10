@@ -23,6 +23,11 @@ export function AuthProvider({ children }) {
     return saveSession(response.data);
   }, [saveSession]);
 
+  const googleLogin = useCallback(async (credential) => {
+    const response = await api.post("/api/auth/google", { credential }, { skipRefresh: true });
+    return saveSession(response.data);
+  }, [saveSession]);
+
   const logout = useCallback(async () => {
     const current = sessionStore.read();
     try {
@@ -39,6 +44,6 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("hotel-ai:session-expired", expire);
   }, []);
 
-  const value = useMemo(() => ({ session, user: session?.user || null, login, register, logout }), [session, login, register, logout]);
+  const value = useMemo(() => ({ session, user: session?.user || null, login, register, googleLogin, logout }), [session, login, register, googleLogin, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

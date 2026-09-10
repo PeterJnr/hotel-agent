@@ -1,4 +1,4 @@
-# Hotel AI Postman suite
+# Apex Solacii Postman suite
 
 ## Import
 
@@ -7,7 +7,7 @@ Import both files into Postman:
 1. `Hotel-AI.postman_collection.json`
 2. `Hotel-AI-Local.postman_environment.json`
 
-Select **Hotel AI - Local**, then set `adminEmail` and `adminPassword` to an existing
+Select **Apex Solacii - Local**, then set `adminEmail` and `adminPassword` to an existing
 SUPER_ADMIN account. Keep secrets in the environment's local/current values rather
 than shared initial values.
 

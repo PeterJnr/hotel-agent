@@ -42,8 +42,8 @@ function request(name, method, path, { auth, body, formdata, events = [success(m
 const collection = {
   info: {
     _postman_id: "2a26b096-a236-4a83-a323-hotelai2026",
-    name: "Hotel AI - Complete API Test Suite",
-    description: "Import with the Hotel AI - Local environment. Run folders in numeric order when practical. Requests that require Google, Cloudinary, Paystack, Sendlib, or a checked-in reservation are explicitly labelled.",
+    name: "Apex Solacii - Complete API Test Suite",
+    description: "Import with the Apex Solacii - Local environment. Run folders in numeric order when practical. Requests that require Google, Cloudinary, Paystack, Sendlib, or a checked-in reservation are explicitly labelled.",
     schema,
   },
   variable: [{ key: "baseUrl", value: "http://localhost:6000" }],
@@ -59,6 +59,20 @@ const collection = {
       request("Login customer", "POST", "/api/auth/login", {
         body: { email: "{{customerEmail}}", password: "{{customerPassword}}" },
         events: [capture(200, [["customerToken", "body.data.accessToken"], ["customerRefreshToken", "body.data.refreshToken"], ["customerId", "body.data.user.id"]])],
+      }),
+      request("Request password reset", "POST", "/api/auth/forgot-password", {
+        body: { email: "{{customerEmail}}" },
+        description: "Sends a one-hour reset link through Sendlib. Copy its token into passwordResetToken for the next request.",
+      }),
+      request("Reset password [USES EMAILED TOKEN]", "POST", "/api/auth/reset-password", {
+        body: { token: "{{passwordResetToken}}", password: "{{newCustomerPassword}}" },
+        description: "Use the token from the reset email. A successful reset revokes all existing refresh tokens.",
+      }),
+      request("Password reset does not reveal unknown accounts", "POST", "/api/auth/forgot-password", {
+        body: { email: "unknown.{{$timestamp}}@example.com" }, events: [success([200])],
+      }),
+      request("Invalid password reset token is rejected", "POST", "/api/auth/reset-password", {
+        body: { token: "invalid-token", password: "NewPostmanPass123!" }, events: [errorTest(400)],
       }),
       request("Login super admin", "POST", "/api/auth/login", {
         body: { email: "{{adminEmail}}", password: "{{adminPassword}}" },
@@ -88,7 +102,7 @@ const collection = {
         "if (body.data[0]) pm.environment.set(\"roomTypeId\", body.data[0].id);",
       )] }),
       request("Get room type", "GET", "/api/room-types/{{roomTypeId}}"),
-      request("Update room type", "PATCH", "/api/room-types/{{roomTypeId}}", { auth: "adminToken", body: { description: "Updated through the Hotel AI Postman suite", capacity: 3, pricePerNight: "2500.00" } }),
+      request("Update room type", "PATCH", "/api/room-types/{{roomTypeId}}", { auth: "adminToken", body: { description: "Updated through the Apex Solacii Postman suite", capacity: 3, pricePerNight: "2500.00" } }),
       request("Customer cannot update room type", "PATCH", "/api/room-types/{{roomTypeId}}", { auth: "customerToken", body: { description: "Forbidden" }, events: [errorTest(403)] }),
     ] },
     { name: "03 - Rooms and Availability", item: [
@@ -162,7 +176,7 @@ const collection = {
     ] },
     { name: "08 - Email Templates", item: [
       request("List placeholders", "GET", "/api/management/email-templates/placeholders", { auth: "adminToken" }),
-      request("Preview customer welcome template contract", "POST", "/api/management/email-templates/{{emailTemplateId}}/preview", { auth: "adminToken", body: { variables: { firstName: "Ada", lastName: "Okafor", email: "ada@example.com", loginUrl: "http://localhost:5173/login", hotelName: "Maison Aurelia" } }, description: "Use an emailTemplateId whose event is CUSTOMER_WELCOME when validating the welcome design." }),
+      request("Preview customer welcome template contract", "POST", "/api/management/email-templates/{{emailTemplateId}}/preview", { auth: "adminToken", body: { variables: { firstName: "Ada", lastName: "Okafor", email: "ada@example.com", loginUrl: "http://localhost:5173/login", hotelName: "Apex Solacii" } }, description: "Use an emailTemplateId whose event is CUSTOMER_WELCOME when validating the welcome design." }),
       request("Create template (captures ID)", "POST", "/api/management/email-templates", { auth: "adminToken", body: { event: "RESERVATION_CREATED", name: "Postman {{$timestamp}}", subject: "Reservation {{reservationId}} created", htmlBody: "<p>Hello {{firstName}}, room {{roomNumber}} is reserved.</p>", textBody: "Hello {{firstName}}" }, events: [capture(201, [["emailTemplateId", "body.data.id"]], [201])] }),
       request("List templates", "GET", "/api/management/email-templates?event=RESERVATION_CREATED", { auth: "adminToken" }),
       request("Get template", "GET", "/api/management/email-templates/{{emailTemplateId}}", { auth: "adminToken" }),
@@ -194,7 +208,7 @@ const collection = {
       request("Management dashboard", "GET", "/api/management/dashboard?date={{dashboardDate}}&upcomingDays=7", { auth: "adminToken" }),
       request("Customer dashboard access forbidden", "GET", "/api/management/dashboard", { auth: "customerToken", events: [errorTest(403)] }),
     ] },
-    { name: "11 - Hotel AI Customer", item: [
+    { name: "11 - Apex Solacii Customer", item: [
       request("Start AI conversation (captures conversation/action)", "POST", "/api/ai/chat", { auth: "customerToken", body: { message: "Find a STANDARD room for 2 guests from {{checkIn}} to {{checkOut}}.", clientMessageId: "{{$guid}}" }, events: [test(
         "pm.expect([200, 202, 429, 503]).to.include(pm.response.code); const body = pm.response.json();",
         "if (body.success && body.data.conversationId) pm.environment.set(\"aiConversationId\", body.data.conversationId);",
@@ -214,7 +228,7 @@ const collection = {
       request("Archive AI conversation [RUN LAST]", "PATCH", "/api/ai/conversations/{{aiConversationId}}/archive", { auth: "customerToken" }),
       request("AI message requires clientMessageId", "POST", "/api/ai/chat", { auth: "customerToken", body: { message: "Hello" }, events: [errorTest(400)] }),
     ] },
-    { name: "12 - Hotel AI Admin Observability", item: [
+    { name: "12 - Apex Solacii Admin Observability", item: [
       request("AI metrics", "GET", "/api/ai/admin/metrics?days=7", { auth: "adminToken", events: [test(
         "pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.success).to.eql(true);",
         "pm.test(\"Metrics contain no raw prompts\", () => pm.expect(JSON.stringify(body.data)).not.to.include(\"Find a STANDARD room\"));",
@@ -245,10 +259,11 @@ for (const folder of collection.item) {
 
 const environment = {
   id: "59bec256-f990-47ab-9080-hotelailocal",
-  name: "Hotel AI - Local",
+  name: "Apex Solacii - Local",
   values: [
     ["baseUrl", "http://localhost:6000", true],
     ["customerEmail", "", true], ["customerPassword", "PostmanPass123!", true],
+    ["passwordResetToken", "", true], ["newCustomerPassword", "NewPostmanPass123!", true],
     ["customerToken", "", true], ["customerRefreshToken", "", true], ["customerId", "", true],
     ["adminEmail", "", true], ["adminPassword", "", true], ["adminToken", "", true], ["adminRefreshToken", "", true], ["adminId", "", true],
     ["checkIn", "2030-10-10", true], ["checkOut", "2030-10-12", true], ["guests", "2", true], ["dashboardDate", "2030-10-10", true],
@@ -262,7 +277,7 @@ const environment = {
   ].map(([key, value, enabled]) => ({ key, value, enabled, type: key.toLowerCase().includes("password") || key.toLowerCase().includes("token") || key === "googleCredential" ? "secret" : "default" })),
   _postman_variable_scope: "environment",
   _postman_exported_at: new Date().toISOString(),
-  _postman_exported_using: "Hotel AI generator",
+  _postman_exported_using: "Apex Solacii generator",
 };
 
 await mkdir("postman", { recursive: true });

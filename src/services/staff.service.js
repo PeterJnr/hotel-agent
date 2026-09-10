@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 
 import { prisma } from "../lib/prisma.js";
-import { notifyStaffOnboarded } from "./emailNotification.service.js";
+import { deliverEmailOutboxJob, enqueueEmail } from "./emailOutbox.service.js";
 
 const staffRoleNames = [
   "SUPER_ADMIN",
@@ -151,7 +151,7 @@ export async function createStaff({
 
       const configuredRoles = await getConfiguredRoles(tx, normalizedRoles);
 
-      return tx.user.create({
+      const created = await tx.user.create({
         data: {
           firstName: normalizedFirstName,
           lastName: normalizedLastName,
@@ -170,13 +170,16 @@ export async function createStaff({
         },
         select: staffSelect,
       });
+      const serialized = serializeStaff(created);
+      const outbox = await enqueueEmail(tx, { event: "STAFF_ONBOARDED", dedupeKey: `staff-onboarded:${created.id}`, payload: { staff: { id: serialized.id, firstName: serialized.firstName, email: serialized.email, roles: serialized.roles.map(({ name, description }) => ({ name, description })) } } });
+      return { staff: created, outboxJobId: outbox.id };
     });
 
-    const serializedStaff = serializeStaff(staff);
-    const delivery = await notifyStaffOnboarded(serializedStaff);
+    const serializedStaff = serializeStaff(staff.staff);
+    const delivery = await deliverEmailOutboxJob(staff.outboxJobId);
     return {
       ...serializedStaff,
-      onboardingEmail: { status: delivery ? "SENT" : "FAILED" },
+      onboardingEmail: { status: delivery.status === "SENT" ? "SENT" : "FAILED" },
     };
   } catch (error) {
     if (error.code === "P2002") {

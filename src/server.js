@@ -15,11 +15,28 @@ import roomTypeRoutes from "./routes/roomType.routes.js";
 import roomTypeImageRoutes from "./routes/roomTypeImage.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
 import serviceRequestRoutes from "./routes/serviceRequest.routes.js";
+import { startEmailOutboxWorker } from "./services/emailOutbox.service.js";
+import { prisma } from "./lib/prisma.js";
 
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+const configuredOrigins = process.env.CORS_ORIGINS
+  ?.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || !configuredOrigins?.length || configuredOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origin is not allowed by CORS."));
+    },
+    credentials: true,
+  }),
+);
 app.use(
   express.json({
     verify: (req, res, buffer) => {
@@ -31,7 +48,7 @@ app.use(
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Hotel AI API is running.",
+    message: "Apex Solacii API is running.",
   });
 });
 
@@ -50,6 +67,20 @@ app.use("/api/room-types", roomTypeImageRoutes);
 app.use("/api/management/staff", staffRoutes);
 app.use("/api/service-requests", serviceRequestRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Hotel AI API running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`Apex Solacii API running on port ${PORT}`);
 });
+
+const emailOutboxTimer = startEmailOutboxWorker();
+
+async function shutdown(signal) {
+  console.log(`${signal} received. Shutting down Apex Solacii API.`);
+  clearInterval(emailOutboxTimer);
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+}
+
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGINT", () => shutdown("SIGINT"));

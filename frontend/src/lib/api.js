@@ -1,6 +1,6 @@
 import { sessionStore } from "./session.js";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:6000").replace(/\/$/, "");
+const API_URL = (import.meta.env.DEV ? "" : import.meta.env.VITE_API_URL || "http://localhost:6000").replace(/\/$/, "");
 let refreshPromise;
 
 async function parseResponse(response) {
