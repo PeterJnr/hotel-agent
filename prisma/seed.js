@@ -128,37 +128,39 @@ async function main() {
 
   console.log("Rooms seeded successfully.");
 
-  const customerRole = await prisma.role.findUnique({
-    where: { name: "CUSTOMER" },
-  });
+  if (process.env.NODE_ENV !== "production") {
+    const customerRole = await prisma.role.findUnique({
+      where: { name: "CUSTOMER" },
+    });
 
-  if (!customerRole) {
-    throw new Error("CUSTOMER role not found.");
-  }
+    if (!customerRole) {
+      throw new Error("CUSTOMER role not found.");
+    }
 
-  const user = await prisma.user.upsert({
-    where: {
-      email: testUser.email,
-    },
-    update: {},
-    create: testUser,
-  });
+    const user = await prisma.user.upsert({
+      where: {
+        email: testUser.email,
+      },
+      update: {},
+      create: testUser,
+    });
 
-  await prisma.userRole.upsert({
-    where: {
-      userId_roleId: {
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: user.id,
+          roleId: customerRole.id,
+        },
+      },
+      update: {},
+      create: {
         userId: user.id,
         roleId: customerRole.id,
       },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      roleId: customerRole.id,
-    },
-  });
+    });
 
-  console.log("Test customer seeded successfully.");
+    console.log("Test customer seeded successfully.");
+  }
 }
 
 main()

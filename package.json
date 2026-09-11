@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "start:prod": "npm run db:migrate:deploy && node src/server.js",
+    "start:prod": "npm run db:migrate:deploy && npm run db:seed && node src/server.js",
     "postinstall": "prisma generate --config prisma7.config.ts",
     "db:migrate:deploy": "prisma migrate deploy --config prisma7.config.ts",
+    "db:seed": "node prisma/seed.js",
     "promote:super-admin": "node scripts/promote-super-admin.js",
     "test:payment": "node scripts/smoke-payment.js",
     "test:staff": "node scripts/smoke-staff.js",
