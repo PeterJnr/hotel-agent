@@ -1,4 +1,4 @@
-import { executeAiTool } from "./toolExecutor.js";
+import { executeAiTool, validateAiToolRequest } from "./toolExecutor.js";
 import {
   createAiConversation,
   getAiConversation,
@@ -39,6 +39,22 @@ function combineUsage(...items) {
     return values.length ? values.reduce((total, value) => total + value, 0) : null;
   };
   return { inputTokens: sum("inputTokens"), outputTokens: sum("outputTokens"), totalTokens: sum("totalTokens") };
+}
+
+const MAX_AUTOMATIC_TOOL_STEPS = 4;
+
+function prepareProviderToolCall(call, { userId, userRoles }) {
+  const prepared = validateAiToolRequest({
+    name: call.name,
+    arguments: call.args || {},
+    context: { userId, roles: userRoles },
+  });
+  return {
+    id: call.id,
+    name: prepared.definition.name,
+    arguments: prepared.input,
+    confirmationRequired: prepared.definition.confirmationRequired,
+  };
 }
 
 export function buildToolResultContents({ history = [], message, modelContent, functionResponse }) {
@@ -147,93 +163,127 @@ export async function handleCustomerAiMessage({
   history = [],
   conversationId,
   sourceMessageId,
-}) {
-  const plan = await planCustomerMessage({ message, userId, userRoles, history });
+}, dependencies = {}) {
+  const planMessage = dependencies.planCustomerMessage || planCustomerMessage;
+  const executeTool = dependencies.executeAiTool || executeAiTool;
+  const createAction = dependencies.createPendingAiAction || createPendingAiAction;
+  const createProvider = dependencies.createGeminiClient || createGeminiClient;
+  const generateContent = dependencies.generateGeminiContent || generateGeminiContent;
+  const plan = await planMessage({ message, userId, userRoles, history });
 
   if (plan.type === "message") {
     return { ...plan, _telemetry: { usage: plan.usage } };
   }
 
-  if (plan.toolCall.confirmationRequired) {
-    const pendingAction = await createPendingAiAction({
-      userId,
-      userRoles,
-      conversationId,
-      sourceMessageId,
-      toolName: plan.toolCall.name,
-      arguments: plan.toolCall.arguments,
+  const provider = createProvider();
+  const { model } = provider;
+  const contents = history.map(({ role, content }) => ({
+    role: role === "ASSISTANT" ? "model" : "user",
+    parts: [{ text: content }],
+  }));
+  contents.push({ role: "user", parts: [{ text: message.trim() }] });
+
+  let toolCall = plan.toolCall;
+  let modelContent = plan.providerContext.modelContent;
+  let usage = plan.usage;
+  const toolsUsed = [];
+
+  for (let step = 0; step < MAX_AUTOMATIC_TOOL_STEPS; step += 1) {
+    if (toolCall.confirmationRequired) {
+      const pendingAction = await createAction({
+        userId,
+        userRoles,
+        conversationId,
+        sourceMessageId,
+        toolName: toolCall.name,
+        arguments: toolCall.arguments,
+      });
+      return {
+        type: "confirmation_required",
+        model,
+        message: "Please explicitly confirm before I perform this action.",
+        pendingAction: { id: pendingAction.id, expiresAt: pendingAction.expiresAt },
+        proposedAction: {
+          id: pendingAction.id,
+          name: toolCall.name,
+          arguments: toolCall.arguments,
+          expiresAt: pendingAction.expiresAt,
+        },
+        _telemetry: {
+          usage,
+          toolName: toolCall.name,
+          confirmationRequired: true,
+        },
+      };
+    }
+
+    const toolResult = await executeTool({
+      name: toolCall.name,
+      arguments: toolCall.arguments,
+      context: { userId, roles: userRoles },
     });
+    toolsUsed.push(toolCall.name);
+    contents.push(modelContent);
+    contents.push({
+      role: "user",
+      parts: [{
+        functionResponse: {
+          name: toolCall.name,
+          response: toJsonSafe(toolResult),
+          ...(toolCall.id ? { id: toolCall.id } : {}),
+        },
+      }],
+    });
+
+    const response = await generateContent({
+      model,
+      contents,
+      config: {
+        systemInstruction: HOTEL_AI_SYSTEM_INSTRUCTION,
+        tools: getGeminiTools(),
+        maxOutputTokens: 512,
+        thinkingConfig: { thinkingLevel: "low" },
+      },
+    }, { provider });
+    usage = combineUsage(usage, extractGeminiUsage(response));
+
+    const calls = response.functionCalls || [];
+    if (calls.length > 1) {
+      throw orchestratorError(
+        "The AI proposed multiple operations. Please handle one operation at a time.",
+        "AI_MULTIPLE_TOOL_CALLS",
+        409,
+      );
+    }
+    if (calls.length === 1) {
+      toolCall = prepareProviderToolCall(calls[0], { userId, userRoles });
+      modelContent = response.candidates?.[0]?.content;
+      continue;
+    }
+
+    const text = response.text?.trim();
+    if (!text) {
+      const finishReason = response.candidates?.[0]?.finishReason || "UNKNOWN";
+      throw orchestratorError(
+        `Gemini returned neither a follow-up action nor a summary (finish reason: ${finishReason}).`,
+        "AI_EMPTY_TOOL_SUMMARY",
+      );
+    }
+
     return {
-      type: "confirmation_required",
-      model: plan.model,
-      message: "Please explicitly confirm before I perform this action.",
-      pendingAction: {
-        id: pendingAction.id,
-        expiresAt: pendingAction.expiresAt,
-      },
-      proposedAction: {
-        id: pendingAction.id,
-        name: plan.toolCall.name,
-        arguments: plan.toolCall.arguments,
-        expiresAt: pendingAction.expiresAt,
-      },
-      _telemetry: {
-        usage: plan.usage,
-        toolName: plan.toolCall.name,
-        confirmationRequired: true,
-      },
+      type: "message",
+      model,
+      text,
+      toolUsed: { name: toolsUsed.at(-1), names: toolsUsed },
+      _telemetry: { usage, toolName: toolsUsed.at(-1) },
     };
   }
 
-  const toolResult = await executeAiTool({
-    name: plan.toolCall.name,
-    arguments: plan.toolCall.arguments,
-    context: { userId, roles: userRoles },
-  });
-
-  const provider = createGeminiClient();
-  const { model } = provider;
-  const functionResponse = {
-    name: plan.toolCall.name,
-    response: toJsonSafe(toolResult),
-    ...(plan.toolCall.id ? { id: plan.toolCall.id } : {}),
-  };
-
-  const response = await generateGeminiContent({
-    model,
-    contents: buildToolResultContents({
-      history,
-      message,
-      modelContent: plan.providerContext.modelContent,
-      functionResponse,
-    }),
-    config: {
-      systemInstruction: HOTEL_AI_SYSTEM_INSTRUCTION,
-      tools: getGeminiTools(),
-      maxOutputTokens: 512,
-      thinkingConfig: { thinkingLevel: "low" },
-    },
-  }, { provider });
-
-  const text = response.text?.trim();
-  if (!text) {
-    const finishReason = response.candidates?.[0]?.finishReason || "UNKNOWN";
-    throw orchestratorError(
-      `Gemini could not summarize the tool result (finish reason: ${finishReason}).`,
-      "AI_EMPTY_TOOL_SUMMARY",
-    );
-  }
-
-  return {
-    type: "message",
-    model,
-    text,
-    toolUsed: { name: plan.toolCall.name },
-    _telemetry: {
-      usage: combineUsage(plan.usage, extractGeminiUsage(response)),
-      toolName: plan.toolCall.name,
-    },
-  };
+  throw orchestratorError(
+    "Solacii could not complete this request safely in one turn. Please try a more specific request.",
+    "AI_TOOL_STEP_LIMIT",
+    409,
+  );
 }
 
 export async function handlePersistedCustomerAiMessage({

@@ -23,6 +23,7 @@
     "test:ai-orchestrator": "node scripts/smoke-ai-orchestrator.js",
     "test:ai-confirmation": "node scripts/smoke-ai-confirmation.js",
     "test:ai-confirmed-response": "node scripts/smoke-ai-confirmed-response.js",
+    "test:ai-multistep": "node scripts/smoke-ai-multistep.js",
     "test:ai-api": "node scripts/smoke-ai-api.js",
     "test:ai-conversation": "node scripts/smoke-ai-conversation.js",
     "test:ai-resilience": "node scripts/smoke-ai-resilience.js",
