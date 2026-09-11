@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router";
 
 import { useAuth } from "../../features/auth/authContext.js";
+import { ThemeToggle } from "../ThemeToggle.jsx";
 
 export function SiteHeader({ variant = "solid" }) {
   const [open, setOpen] = useState(false);
@@ -28,6 +29,7 @@ export function SiteHeader({ variant = "solid" }) {
             <button className="nav-quiet" type="button" onClick={() => { close(); logout(); }}>Sign out</button>
           </>
         ) : <NavLink to="/login" onClick={close}>Sign in</NavLink>}
+        <ThemeToggle />
         <Link className="nav-cta" to={user ? "/portal" : "/register"} onClick={close}><Sparkles size={15} /> {user ? "Ask Solacii AI" : "Reserve"}</Link>
       </nav>
     </header>

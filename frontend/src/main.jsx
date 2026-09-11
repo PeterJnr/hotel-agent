@@ -9,6 +9,7 @@ import "./styles/booking.css";
 import "./styles/portal.css";
 import "./styles/admin.css";
 import "./styles/google-auth.css";
+import "./styles/theme.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

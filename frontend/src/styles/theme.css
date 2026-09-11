@@ -1,0 +1,34 @@
+:root{--text:#111;--surface-raised:#fff;--surface-soft:#eee8df;--workspace:#f1ede6}
+:root[data-theme="dark"]{--text:#f3f5f8;--ink:#f3f5f8;--forest:#0b1f3a;--forest-2:#17375d;--cream:#182334;--paper:#111925;--stone:#344154;--muted:#a9b3c2;--gold:#d0ad73;--surface-raised:#172231;--surface-soft:#1b2737;--workspace:#0c1420;color-scheme:dark}
+body{color:var(--text);transition:background-color .25s ease,color .25s ease}
+.theme-toggle{width:38px;height:38px;flex:0 0 38px;border:1px solid currentColor;border-radius:50%;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer;opacity:.82;transition:opacity .2s,background .2s,transform .2s}
+.theme-toggle:hover{opacity:1;background:rgba(255,255,255,.1);transform:translateY(-1px)}.theme-toggle svg{width:16px;height:16px}.layout-actions,.live-operations{display:flex;align-items:center;gap:14px}.portal-topbar .theme-toggle,.admin-topbar .theme-toggle{color:var(--text);border-color:var(--stone)}
+
+:root[data-theme="dark"] :where(.rooms-section,.catalog-card,.state-card,.availability-result,.checkout-page,.payment-state,.ai-history){background:var(--surface-soft)}
+:root[data-theme="dark"] :where(.availability-bar,.room-card,.catalog-image>span,.booking-card,.booking-card input,.booking-card select,.stay-details>div,.stay-summary,.booking-success,.payment-icon,.recovery-card,.portal-grid article,.portal-stat-grid article,.next-stay,.next-stay-image>span,.portal-empty,.reservation-row,.reservation-detail-grid section,.reservation-detail-grid aside,.request-form,.request-card,.request-detail-grid>section,.concierge-screen,.ai-confirmation,.ai-confirmation dl>div){background:var(--paper);color:var(--text)}
+:root[data-theme="dark"] :where(.availability-bar input,.availability-bar select,.request-form input,.request-form select,.request-form textarea,.comment-form textarea,.auth-form input,.booking-card input,.booking-card select){color:var(--text)}
+:root[data-theme="dark"] .recovery-page{background:linear-gradient(135deg,#0c1420,#172231)}
+:root[data-theme="dark"] .google-button{background:var(--surface-raised);border-color:var(--stone);color:var(--text)}
+:root[data-theme="dark"] .form-error{background:#3b211f;color:#ffb7aa}
+:root[data-theme="dark"] .assurance{background:#182d29}:root[data-theme="dark"] .assurance>svg{color:#8dc7aa}
+:root[data-theme="dark"] .stay-summary dl>div{border-color:var(--stone)}
+:root[data-theme="dark"] .button.outline{color:var(--text);border-color:var(--stone)}
+
+:root[data-theme="dark"] :where(.portal-shell,.admin-shell){background:var(--workspace);color:var(--text)}
+:root[data-theme="dark"] :where(.portal-topbar,.admin-topbar){background:rgba(17,25,37,.92);border-color:var(--stone)}
+:root[data-theme="dark"] :where(.comment-thread article,.ai-message>p){background:#202c3b}
+:root[data-theme="dark"] .ai-history nav button.active{background:rgba(208,173,115,.13);color:var(--text)}
+:root[data-theme="dark"] .ai-intro>div{background:#243246}
+:root[data-theme="dark"] :where(.ai-confirmation dl,.detail-facts){background:var(--stone)}
+:root[data-theme="dark"] .ai-action-notice{background:#173328;color:#9cd1b3}
+
+:root[data-theme="dark"] :where(.admin-refresh,.admin-kpis article,.admin-panel,.admin-module-placeholder,.admin-filters,.admin-table-wrap,.admin-table th,.admin-detail-card,.admin-detail-facts>span,.room-type-admin-grid article,.room-inventory-grid>article,.admin-drawer,.admin-drawer input,.admin-drawer select,.admin-drawer textarea,.service-queue-card,.service-comments section,.email-template-summary article,.email-template-list>article,.email-template-list article>button,.placeholder-picker,.placeholder-picker button,.ai-run-section select,.ai-runs-table td:last-child button,.ai-run-identity,.ai-run-drawer dl>div,.admin-pagination button,.payment-timeline dl>div,.refund-record dl>div,.refund-record>header button,.staff-grid>a,.staff-created>div,.account-state>div button){background:var(--surface-raised);color:var(--text)}
+:root[data-theme="dark"] :where(.admin-filters input,.admin-filters select,.admin-drawer input,.admin-drawer select,.admin-drawer textarea,.service-controls select,.service-comments textarea,.refund-action textarea,.ai-period-control select,.ai-run-section select){color:var(--text);background:var(--surface-raised);border-color:var(--stone)}
+:root[data-theme="dark"] :where(.admin-panel>header,.admin-guest-row,.room-state>div>span,.admin-table td,.admin-status-action,.payment-card>article,.room-inventory-grid article>header,.room-inventory-grid footer,.service-description>div,.status-actions,.email-template-list>article,.template-preview,.template-lifecycle,.ai-error-panel>div>article){border-color:var(--stone)}
+:root[data-theme="dark"] :where(.room-state>div strong,.ai-actions-panel span strong){color:var(--text)}
+:root[data-theme="dark"] .admin-table th{background:#1c2837}:root[data-theme="dark"] :where(.admin-drawer input:disabled,.admin-drawer select:disabled){background:#222d3b;color:var(--muted)}
+:root[data-theme="dark"] :where(.service-comments section.internal,.drawer-note){background:#342d21;color:#e2c28d}
+:root[data-theme="dark"] .service-comments section{background:#202c3b}
+:root[data-theme="dark"] .status-pill{filter:saturate(.8) brightness(.9)}
+
+@media(max-width:900px){.site-nav .theme-toggle{margin-top:4px}.layout-actions{gap:10px}}
