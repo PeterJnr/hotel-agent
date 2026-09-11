@@ -31,4 +31,19 @@ body{color:var(--text);transition:background-color .25s ease,color .25s ease}
 :root[data-theme="dark"] .service-comments section{background:#202c3b}
 :root[data-theme="dark"] .status-pill{filter:saturate(.8) brightness(.9)}
 
+/* Dark-mode actions: every label and icon inherits a deliberate contrast color. */
+:root[data-theme="dark"] :where(.button,.availability-bar>button,.new-chat,.comment-form button,.service-comments form button,.status-actions button,.image-manager>header label){background:var(--gold);color:#0b1422;border-color:var(--gold)}
+:root[data-theme="dark"] :where(.button,.availability-bar>button,.new-chat,.comment-form button,.service-comments form button,.status-actions button,.image-manager>header label):hover{background:#e0c18d;color:#08111f}
+:root[data-theme="dark"] :where(.button,.availability-bar>button,.new-chat,.comment-form button,.service-comments form button,.status-actions button,.image-manager>header label):focus-visible{outline:2px solid #f3f5f8;outline-offset:3px}
+:root[data-theme="dark"] :where(.button.cream,.button.light,.button.outline){background:var(--surface-raised);color:var(--text);border:1px solid var(--stone)}
+:root[data-theme="dark"] :where(.button.cream,.button.light,.button.outline):hover{background:#243246;color:#fff;border-color:var(--gold)}
+:root[data-theme="dark"] :where(.available-numbers button,.ai-intro>div:last-child button,.admin-refresh,.admin-pagination button,.refund-record>header button,.email-template-list article>button,.placeholder-picker button,.ai-runs-table td:last-child button,.account-state>div button,.generated-password button,.image-manager article button){background:var(--surface-raised);color:var(--text);border-color:var(--stone)}
+:root[data-theme="dark"] :where(.available-numbers button,.ai-intro>div:last-child button,.admin-refresh,.admin-pagination button,.refund-record>header button,.email-template-list article>button,.placeholder-picker button,.ai-runs-table td:last-child button,.generated-password button,.image-manager article button):hover{background:#243246;border-color:var(--gold)}
+:root[data-theme="dark"] :where(.status-actions button.danger,.quiet-danger,.account-state>div button:not(.restore)){background:#542e2d;color:#ffb8af;border-color:#87504b}
+:root[data-theme="dark"] :where(button:disabled,.button:disabled){opacity:.48;color:var(--muted);cursor:not-allowed}
+:root[data-theme="dark"] .portal-sidebar{background:#24282f;color:#f4f5f7}
+:root[data-theme="dark"] .portal-sidebar nav a{color:#b7bdc7}
+:root[data-theme="dark"] .portal-sidebar nav a.active,:root[data-theme="dark"] .portal-sidebar nav a:hover{background:#353b44;color:#fff}
+:root[data-theme="dark"] .portal-profile{border-color:#414751}
+
 @media(max-width:900px){.site-nav .theme-toggle{margin-top:4px}.layout-actions{gap:10px}}
